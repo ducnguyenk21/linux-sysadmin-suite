@@ -1,0 +1,8 @@
+﻿.env
+*.log
+*.iso
+*.vdi
+*.vbox
+*.retry
+__pycache__/
+.vscode/
