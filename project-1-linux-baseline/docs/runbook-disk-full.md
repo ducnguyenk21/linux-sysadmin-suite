@@ -15,7 +15,7 @@ Tài liệu này cung cấp quy trình chuẩn hóa (SOP) dành cho Kỹ sư Qu�
 
 ## 3. Quy trình Xử lý Chi tiết Từng Kịch bản
 
-### Kịch bản A: Tệp Đã Xóa Nhưng Vẫn Bị Tiến Trình Giữ Mở ("Bóng ma Dung lượng")
+### Kịch bản A: Tệp Đã Xóa Nhưng Vẫn Bị Tiến Trình Giữ Mở
 
 **Cơ chế tầng nhân (Kernel VFS):** Khi chạy lệnh `rm`, nhân Linux gọi system call `unlink()` để xóa tên tệp khỏi thư mục và giảm bộ đếm liên kết cứng (`NLINK`) về `0`. Tuy nhiên, phân hệ quản lý tệp ảo (VFS) sẽ **không thu hồi các block dữ liệu vật lý** trên ổ đĩa cho tới khi toàn bộ các File Descriptor (`/proc/<PID>/fd/<FD>`) đang mở tệp đó được đóng lại.
 
