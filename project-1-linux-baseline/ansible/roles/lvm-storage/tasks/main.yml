@@ -1,0 +1,42 @@
+---
+- name: Ensure Volume Group vg_data spans /dev/sdb and /dev/sdc
+  community.general.lvg:
+    vg: vg_data
+    pvs: /dev/sdb,/dev/sdc
+    state: present
+
+- name: Ensure Logical Volume lv_app is provisioned at 7G
+  community.general.lvol:
+    vg: vg_data
+    lv: lv_app
+    size: 7g
+    resizefs: true
+    state: present
+
+- name: Ensure ext4 filesystem exists on /dev/vg_data/lv_app
+  community.general.filesystem:
+    fstype: ext4
+    dev: /dev/vg_data/lv_app
+
+- name: Read UUID of /dev/vg_data/lv_app
+  ansible.builtin.command: blkid -s UUID -o value /dev/vg_data/lv_app
+  register: lv_app_uuid
+  changed_when: false
+
+- name: Ensure mount point /mnt/app_data exists
+  ansible.builtin.file:
+    path: /mnt/app_data
+    state: directory
+    owner: nguyen
+    group: nguyen
+    mode: '0755'
+
+- name: Mount /mnt/app_data persistently via UUID in /etc/fstab
+  ansible.posix.mount:
+    path: /mnt/app_data
+    src: "UUID={{ lv_app_uuid.stdout }}"
+    fstype: ext4
+    opts: defaults,nofail
+    dump: '0'
+    passno: '2'
+    state: mounted

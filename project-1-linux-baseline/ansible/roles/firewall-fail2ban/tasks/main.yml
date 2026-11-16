@@ -1,0 +1,60 @@
+---
+- name: Set UFW default outgoing policy to allow
+  community.general.ufw:
+    direction: outgoing
+    policy: allow
+
+- name: Allow required inbound TCP ports via UFW
+  community.general.ufw:
+    rule: allow
+    port: "{{ item.port }}"
+    proto: tcp
+    comment: "{{ item.comment }}"
+  loop:
+    - { port: '22', comment: 'SSH Management' }
+    - { port: '80', comment: 'Nginx HTTP' }
+    - { port: '443', comment: 'Nginx HTTPS' }
+
+- name: Enable UFW and enforce default deny incoming
+  community.general.ufw:
+    state: enabled
+    direction: incoming
+    policy: deny
+
+- name: Deploy Fail2ban sshd jail configuration
+  ansible.builtin.copy:
+    dest: /etc/fail2ban/jail.d/sshd.local
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      [sshd]
+      enabled = true
+      port = 22
+      filter = sshd
+      backend = systemd
+      journalmatch = _COMM=sshd
+      maxretry = 5
+      findtime = 600
+      bantime = 600
+      ignoreip = 127.0.0.1/8 ::1 192.168.56.1
+  notify: Restart fail2ban
+
+- name: Deploy Fail2ban custom preauth filter
+  ansible.builtin.copy:
+    dest: /etc/fail2ban/filter.d/sshd.local
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      [Definition]
+      failregex = ^Connection closed by authenticating user \S+ <HOST> port \d+ \[preauth\]$
+                  ^Invalid user \S+ from <HOST> port \d+$
+                  ^Failed (?:password|publickey) for (?:invalid user )?\S+ from <HOST> port \d+.*$
+  notify: Restart fail2ban
+
+- name: Ensure Fail2ban service is running and enabled
+  ansible.builtin.service:
+    name: fail2ban
+    state: started
+    enabled: yes
